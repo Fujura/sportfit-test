@@ -1,4 +1,3 @@
-import { Button, Carousel } from "~/shared/components";
 import type { Route } from "./+types/home";
 import { CarouselSection } from "./components/CarouselSection";
 import { MainSection } from "./components/MainSection";
