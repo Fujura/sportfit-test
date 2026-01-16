@@ -11,6 +11,9 @@ export const Carousel = ({ images, className }: CarouselProps) => {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const carouselContainerRef = useRef<HTMLDivElement>(null);
 	const [isMobile, setIsMobile] = useState(true);
+	const [touchStart, setTouchStart] = useState(0);
+	const [touchOffset, setTouchOffset] = useState(0);
+	const [isDragging, setIsDragging] = useState(false);
 
 	useEffect(() => {
 		const checkMobile = () => {
@@ -29,9 +32,42 @@ export const Carousel = ({ images, className }: CarouselProps) => {
 		setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
 	};
 
+	const handleTouchStart = (e: React.TouchEvent) => {
+		if (!isMobile) return;
+		setTouchStart(e.touches[0].clientX);
+		setIsDragging(true);
+	};
+
+	const handleTouchMove = (e: React.TouchEvent) => {
+		if (!isMobile || !isDragging) return;
+		const currentTouch = e.touches[0].clientX;
+		const offset = currentTouch - touchStart;
+		setTouchOffset(offset);
+	};
+
+	const handleTouchEnd = () => {
+		if (!isMobile || !isDragging) return;
+		const threshold = 50;
+
+		if (Math.abs(touchOffset) > threshold) {
+			if (touchOffset > 0) {
+				goToPrevious();
+			} else {
+				goToNext();
+			}
+		}
+
+		setTouchOffset(0);
+		setIsDragging(false);
+	};
+
 	const getTransform = () => {
 		if (isMobile) {
-			return `translateX(calc(-${currentIndex} * (100% + 1rem)))`;
+			const baseTransform = `calc(-${currentIndex} * (100% + 1rem))`;
+			if (isDragging && touchOffset !== 0) {
+				return `translateX(calc(${baseTransform} + ${touchOffset}px))`;
+			}
+			return `translateX(${baseTransform})`;
 		}
 		return `translateX(calc(-${currentIndex} * (calc((100% - 2rem) / 3) + 1rem)))`;
 	};
@@ -67,7 +103,11 @@ export const Carousel = ({ images, className }: CarouselProps) => {
 						className="flex gap-4 transition-transform duration-500 ease-in-out"
 						style={{
 							transform: getTransform(),
+							transition: isDragging ? "none" : "transform 0.5s ease-in-out",
 						}}
+						onTouchStart={handleTouchStart}
+						onTouchMove={handleTouchMove}
+						onTouchEnd={handleTouchEnd}
 					>
 						{images.map((image, index) => (
 							<div
